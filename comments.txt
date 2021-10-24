@@ -4,15 +4,21 @@ https://callofduty.fandom.com/wiki/Gun_Game
 - matar de faquinha volta uma arma
 
 
-areas da nuketown:
-- casa amarela e verde
-    - jardim
-    - sala
-    - cozinha
-    - garagem
-    - escritorio
-    - quarto
-    - varanda
-- rua
-- jipe (esquerda)
-- opala (direita)
+areas da nuketown = [
+    jardim casa amarela,
+    terreo casa amarela,
+    primeiro andar casa amarela,
+    garagem casa amarela,
+    rua,
+    jardim casa verde,
+    terreo casa verde,
+    primeiro andar casa verde,
+    garagem casa verde,
+]
+
+jardim_a = [
+    terreo_a,
+    andar_a,
+    garagem_a,
+    
+]
