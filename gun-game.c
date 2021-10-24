@@ -10,29 +10,6 @@
 // ------------------------------------
 // JOGADORES
 
-// array dos ids dos jogadores escolhidos
-int choosen_players[6];
-
-// array de todos os possiveis jogadores da 102FR
-char all_players[16][12] = {
-		"AUGUSTO",
-		"BERNARDES",
-		"FILLIPO",
-		"GOIAS",
-		"JOHN JOHN",
-		"LEO ARANTES",
-		"LEOZINHO",
-		"LUIZ MITO",
-		"MATEUS",
-		"MICHEL",
-		"PAGANO",
-		"PZ",
-		"SANTISTA",
-		"TUCA",
-		"VITAO",
-		"VITINHO",
-};
-
 // struct de um jogador
 typedef struct
 {
@@ -45,31 +22,57 @@ typedef struct
 // cria seis structs de jogadores
 player players[6];
 
+// array de todos os possiveis jogadores da 102FR
+char all_players[16][12] = {
+	"AUGUSTO",
+	"BERNARDES",
+	"FILLIPO",
+	"GOIAS",
+	"JOHN JOHN",
+	"LEO ARANTES",
+	"LEOZINHO",
+	"LUIZ MITO",
+	"MATEUS",
+	"MICHEL",
+	"PAGANO",
+	"PZ",
+	"SANTISTA",
+	"TUCA",
+	"VITAO",
+	"VITINHO",
+};
+
+// array dos ids dos jogadores escolhidos
+int choosen_players[6];
+
+// ranking dos jogadores
+int ranking[6];
+
 // ------------------------------------
 // ARMAS
 
 // array de todas as armas do gun game em sequencia
 char guns[20][22] = {
-		"PYTHON SPEED RELOADER",
-		"MAKAROV DUAL WIELD",
-		"SPAS-12",
-		"STAKEOUT",
-		"MP5K",
-		"SKORPION DUAL WIELD",
-		"AK74U",
-		"M14",
-		"M16",
-		"FAMAS",
-		"AUG",
-		"HK21",
-		"M60",
-		"L96A1",
-		"WA2000",
-		"GRIM REAPER",
-		"M72 LAW",
-		"CHINA LAKE",
-		"CROSSBOW",
-		"BALLISTIC KNIFE",
+	"PYTHON SPEED RELOADER",
+	"MAKAROV DUAL WIELD",
+	"SPAS-12",
+	"STAKEOUT",
+	"MP5K",
+	"SKORPION DUAL WIELD",
+	"AK74U",
+	"M14",
+	"M16",
+	"FAMAS",
+	"AUG",
+	"HK21",
+	"M60",
+	"L96A1",
+	"WA2000",
+	"GRIM REAPER",
+	"M72 LAW",
+	"CHINA LAKE",
+	"CROSSBOW",
+	"BALLISTIC KNIFE",
 };
 
 // ------------------------------------
@@ -85,45 +88,169 @@ typedef struct
 // cria 9 areas dentro da nuketown
 nuketown_area nuketown[9];
 
+// ------------------------------------
+// PTHREADS
+
 // cria o mutex
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t turns = PTHREAD_MUTEX_INITIALIZER;
 
 // cria barreira
 pthread_barrier_t barrier;
 
+// ------------------------------------
+// JOGO
+
 // cria variavel de controle do jogo
 int game_over = 0;
 
+// mostra a tela de boas vindas
+void welcome_screen()
+{
+	system("clear");
+	printf("PROGRAMACAO CONCORRENTE\n");
+	printf("2021/1\n");
+	printf("PROJETO FINAL\n\n");
+	printf("ARTUR FILGUEIRAS SCHEIBA ZORRON\n");
+	printf("180013696\n\n");
+	printf("BLACK OPS\n");
+	printf("NUKETOWN\n");
+	printf("GUN GAME\n");
+	printf("102FR\n\n");
+	printf(">> PRESSIONE ENTER:\n");
+	getchar();
+}
+
+// inicializa os nomes das areas do mapa
+void initialize_nuketown_names()
+{
+	strcpy(nuketown[0].name, "CASA AMARELA JARDIM ");
+	strcpy(nuketown[1].name, "CASA AMARELA EMBAIXO ");
+	strcpy(nuketown[2].name, "CASA AMARELA EM CIMA ");
+	strcpy(nuketown[3].name, "CASA AMARELA GARAGEM ");
+	strcpy(nuketown[4].name, "CASA VERDE JARDIM ");
+	strcpy(nuketown[5].name, "CASA VERDE EMBAIXO ");
+	strcpy(nuketown[6].name, "CASA VERDE EM CIMA ");
+	strcpy(nuketown[7].name, "CASA VERDE GARAGEM ");
+	strcpy(nuketown[8].name, "RUA");
+}
+
+// inicializa as conexoes entre as areas
+void initialize_nuketown_connections()
+{
+	// inicializa todas as conexoes com -1
+	for (int i = 0; i < 9; i++)
+	{
+		for (int j = 0; j < 6; j++)
+		{
+			nuketown[i].connections[j] = -1;
+		}
+	}
+
+	// cria conexoes da casa amarela jardim
+	nuketown[0].connections[0] = 1;
+	nuketown[0].connections[1] = 2;
+	nuketown[0].connections[2] = 3;
+	nuketown[0].connections[3] = 8;
+
+	// cria conexoes da casa amarela embaixo
+	nuketown[1].connections[0] = 0;
+	nuketown[1].connections[1] = 2;
+	nuketown[1].connections[2] = 3;
+	nuketown[1].connections[3] = 8;
+
+	// cria conexoes da casa amarela em cima
+	nuketown[2].connections[0] = 0;
+	nuketown[2].connections[1] = 1;
+	nuketown[2].connections[2] = 8;
+
+	// cria conexoes da casa amarela garagem
+	nuketown[3].connections[0] = 0;
+	nuketown[3].connections[1] = 1;
+	nuketown[3].connections[2] = 8;
+
+	// cria conexoes da casa verde jardim
+	nuketown[4].connections[0] = 5;
+	nuketown[4].connections[1] = 6;
+	nuketown[4].connections[2] = 7;
+	nuketown[4].connections[3] = 8;
+
+	// cria conexoes da casa verde embaixo
+	nuketown[5].connections[0] = 4;
+	nuketown[5].connections[1] = 6;
+	nuketown[5].connections[2] = 8;
+
+	// cria conexoes da casa verde em cima
+	nuketown[6].connections[0] = 4;
+	nuketown[6].connections[1] = 5;
+	nuketown[6].connections[2] = 8;
+
+	// cria conexoes da casa verde garagem
+	nuketown[7].connections[0] = 4;
+	nuketown[7].connections[1] = 8;
+
+	// cria conexoes da rua
+	nuketown[8].connections[0] = 0;
+	nuketown[8].connections[1] = 1;
+	nuketown[8].connections[2] = 3;
+	nuketown[8].connections[3] = 4;
+	nuketown[8].connections[4] = 5;
+	nuketown[8].connections[5] = 7;
+}
+
+// cria o mapa do jogo
+void create_nuketown()
+{
+	initialize_nuketown_names();
+	initialize_nuketown_connections();
+}
+
+// humilha algum jogador
 void humiliate(int killer, int victim)
 {
 	printf("\nHUMILHAÇÃO!\n");
 	printf("%s humilhou %s\n", players[killer].name, players[victim].name);
+
+	// se a vitima nao estiver na primeira arma
 	if (players[victim].gun > 0)
 	{
 		printf("%s: %s => %s\n", players[victim].name, guns[players[victim].gun], guns[players[victim].gun - 1]);
+
+		// vitima volta uma arma
 		players[victim].gun -= 1;
 	}
 	printf("\n");
+	sleep(1);
 }
 
+// mata algum jogador
 void kill(int killer, int victim)
 {
 	printf("\nMORTE!\n");
 	printf("%s (%s) %s\n", players[killer].name, guns[players[killer].gun], players[victim].name);
+
+	// se o assassino estiver na ultima arma
 	if (players[killer].gun == 19)
 	{
+		// jogo acaba
 		game_over = 1;
 	}
 	else
 	{
 		printf("%s: %s => %s\n\n", players[killer].name, guns[players[killer].gun], guns[players[killer].gun + 1]);
+
+		// assassino avanca uma arma
 		players[killer].gun += 1;
 	}
+	sleep(1);
 }
 
+// dois jogadores entram em combate
 void combat(int player1, int player2)
 {
 	int killer, victim;
+
+	// roleta russa para saber quem sera o assassino e quem sera a vitima
 	int russian_roulette = rand() % 2;
 	if (russian_roulette)
 	{
@@ -135,7 +262,14 @@ void combat(int player1, int player2)
 		killer = player2;
 		victim = player1;
 	}
+
+	// vitima morre
 	players[victim].is_dead = 1;
+
+	// retira vitima do mapa
+	players[victim].area = -1;
+
+	// verificar se sera morte normal ou humilhacao (morte 6:1 humilhacao)
 	int gun_kill = rand() % 7;
 	if (gun_kill)
 	{
@@ -147,45 +281,31 @@ void combat(int player1, int player2)
 	}
 }
 
-int get_enemy_id(int id)
-{
-	int enemys_ids[6];
-	for (int i = 0; i < 6; i++)
-	{
-		enemys_ids[i] = -1;
-	}
-	int counter = 0;
-	for (int i = 0; i < 6; i++)
-	{
-		if (players[i].area == players[id].area && id != i)
-		{
-			enemys_ids[counter] = i;
-			counter++;
-		}
-	}
-	int enemy = rand() % counter;
-	return enemys_ids[enemy];
-}
-
+// verifica se existe mais alguem na area
 int is_someone_here(int id)
 {
-	int answer = 0;
+	// cria inimigo com -1
+	int enemy = -1;
+
+	// itera pelos jogadores
 	for (int i = 0; i < 6; i++)
 	{
+		// se existe alguem nesta area diferente de mim
 		if (players[i].area == players[id].area && id != i)
 		{
-			answer = 1;
+			// inimigo recebe id do outro jogador
+			enemy = i;
 			break;
 		}
 	}
-	return answer;
+	return enemy;
 }
 
+// move o jogador pela casa
 void move(int id)
 {
 	int current_area = players[id].area;
-	int new_area;
-	int connection_index;
+	int new_area, connection_index;
 	do
 	{
 		connection_index = rand() % 6;
@@ -225,6 +345,7 @@ void initial_countdown()
 void *players_function(void *arg)
 {
 	int id = (*(int *)arg);
+	int enemy;
 	spawn(id);
 	if (id == 0)
 	{
@@ -234,31 +355,32 @@ void *players_function(void *arg)
 	while (1)
 	{
 		pthread_mutex_lock(&mutex);
+
 		if (game_over)
 		{
 			pthread_mutex_unlock(&mutex);
 			break;
 		}
+
 		if (players[id].is_dead)
 		{
 			spawn(id);
 		}
-		if (is_someone_here(id))
+
+		enemy = is_someone_here(id);
+		if (enemy != -1)
 		{
-			int enemy = get_enemy_id(id);
 			combat(id, enemy);
 		}
+
 		int to_move = rand() % 2;
 		if (to_move)
 		{
 			move(id);
 		}
-		if (is_someone_here(id))
-		{
-			int enemy = get_enemy_id(id);
-			combat(id, enemy);
-		}
+
 		pthread_mutex_unlock(&mutex);
+		sleep(1);
 	}
 	pthread_exit(0);
 }
@@ -322,91 +444,36 @@ void choose_players()
 	getchar();
 }
 
-void initialize_nuketown_connections()
+void show_ranking()
 {
-	for (int i = 0; i < 9; i++)
+	int i, j, swap, ranking[6], unordered = 1;
+
+	for (i = 0; i < 6; i++)
 	{
-		for (int j = 0; j < 6; j++)
+		ranking[i] = i;
+	}
+
+	while (unordered)
+	{
+		unordered = 0;
+		for (i = 0; i < 5; i++)
 		{
-			nuketown[i].connections[j] = -1;
+			if (players[ranking[i]].gun < players[ranking[i + 1]].gun)
+			{
+				unordered = 1;
+				swap = ranking[i];
+				ranking[i] = ranking[i + 1];
+				ranking[i + 1] = swap;
+			}
 		}
 	}
 
-	nuketown[0].connections[0] = 1;
-	nuketown[0].connections[1] = 2;
-	nuketown[0].connections[2] = 3;
-	nuketown[0].connections[3] = 8;
+	printf("\nRANKING FINAL\n\n");
 
-	nuketown[1].connections[0] = 0;
-	nuketown[1].connections[1] = 2;
-	nuketown[1].connections[2] = 3;
-	nuketown[1].connections[3] = 8;
-
-	nuketown[2].connections[0] = 0;
-	nuketown[2].connections[1] = 1;
-	nuketown[2].connections[2] = 8;
-
-	nuketown[3].connections[0] = 0;
-	nuketown[3].connections[1] = 1;
-	nuketown[3].connections[2] = 8;
-
-	nuketown[4].connections[0] = 5;
-	nuketown[4].connections[1] = 6;
-	nuketown[4].connections[2] = 7;
-	nuketown[4].connections[3] = 8;
-
-	nuketown[5].connections[0] = 4;
-	nuketown[5].connections[1] = 6;
-	nuketown[5].connections[2] = 8;
-
-	nuketown[6].connections[0] = 4;
-	nuketown[6].connections[1] = 5;
-	nuketown[6].connections[2] = 8;
-
-	nuketown[7].connections[0] = 4;
-	nuketown[7].connections[1] = 8;
-
-	nuketown[8].connections[0] = 0;
-	nuketown[8].connections[1] = 1;
-	nuketown[8].connections[2] = 3;
-	nuketown[8].connections[3] = 4;
-	nuketown[8].connections[4] = 5;
-	nuketown[8].connections[5] = 7;
-}
-
-void initialize_nuketown_names()
-{
-	strcpy(nuketown[0].name, "CASA AMARELA JARDIM ");
-	strcpy(nuketown[1].name, "CASA AMARELA EMBAIXO ");
-	strcpy(nuketown[2].name, "CASA AMARELA EM CIMA ");
-	strcpy(nuketown[3].name, "CASA AMARELA GARAGEM ");
-	strcpy(nuketown[4].name, "CASA VERDE JARDIM ");
-	strcpy(nuketown[5].name, "CASA VERDE EMBAIXO ");
-	strcpy(nuketown[6].name, "CASA VERDE EM CIMA ");
-	strcpy(nuketown[7].name, "CASA VERDE GARAGEM ");
-	strcpy(nuketown[8].name, "RUA");
-}
-
-void create_nuketown()
-{
-	initialize_nuketown_names();
-	initialize_nuketown_connections();
-}
-
-void welcome_screen()
-{
-	system("clear");
-	printf("PROGRAMACAO CONCORRENTE\n");
-	printf("2021/1\n");
-	printf("PROJETO FINAL\n\n");
-	printf("ARTUR FILGUEIRAS SCHEIBA ZORRON\n");
-	printf("180013696\n\n");
-	printf("BLACK OPS\n");
-	printf("NUKETOWN\n");
-	printf("GUN GAME\n");
-	printf("102FR\n\n");
-	printf(">> PRESSIONE ENTER:\n");
-	getchar();
+	for (i = 0; i < 6; i++)
+	{
+		printf("%dº: %s\n", i + 1, players[ranking[i]].name);
+	}
 }
 
 int main()
@@ -416,5 +483,6 @@ int main()
 	create_nuketown();
 	choose_players();
 	start_game();
+	show_ranking();
 	return 0;
 }
