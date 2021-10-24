@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 // ------------------------------------
 // JOGADORES
@@ -14,28 +15,27 @@ int choosen_players[6];
 
 // array de todos os possiveis jogadores da 102FR
 char all_players[16][12] = {
-	"AUGUSTO",
-	"BERNARDES",
-	"FILLIPO",
-	"GOIAS",
-	"JOHN JOHN",
-	"LEO ARANTES",
-	"LEOZINHO",
-	"LUIZ MITO",
-	"MATEUS",
-	"MICHEL",
-	"PAGANO",
-	"PZ",
-	"SANTISTA",
-	"TUCA",
-	"VITAO",
-	"VITINHO",
+		"AUGUSTO",
+		"BERNARDES",
+		"FILLIPO",
+		"GOIAS",
+		"JOHN JOHN",
+		"LEO ARANTES",
+		"LEOZINHO",
+		"LUIZ MITO",
+		"MATEUS",
+		"MICHEL",
+		"PAGANO",
+		"PZ",
+		"SANTISTA",
+		"TUCA",
+		"VITAO",
+		"VITINHO",
 };
 
 // struct de um jogador
 typedef struct
 {
-	int id;
 	char name[12];
 	int gun;
 	int area;
@@ -50,26 +50,26 @@ player players[6];
 
 // array de todas as armas do gun game em sequencia
 char guns[20][22] = {
-	"PYTHON SPEED RELOADER",
-	"MAKAROV DUAL WIELD",
-	"SPAS-12",
-	"STAKEOUT",
-	"MP5K",
-	"SKORPION DUAL WIELD",
-	"AK74U",
-	"M14",
-	"M16",
-	"FAMAS",
-	"AUG",
-	"HK21",
-	"M60",
-	"L96A1",
-	"WA2000",
-	"GRIM REAPER",
-	"M72 LAW",
-	"CHINA LAKE",
-	"CROSSBOW",
-	"BALLISTIC KNIFE",
+		"PYTHON SPEED RELOADER",
+		"MAKAROV DUAL WIELD",
+		"SPAS-12",
+		"STAKEOUT",
+		"MP5K",
+		"SKORPION DUAL WIELD",
+		"AK74U",
+		"M14",
+		"M16",
+		"FAMAS",
+		"AUG",
+		"HK21",
+		"M60",
+		"L96A1",
+		"WA2000",
+		"GRIM REAPER",
+		"M72 LAW",
+		"CHINA LAKE",
+		"CROSSBOW",
+		"BALLISTIC KNIFE",
 };
 
 // ------------------------------------
@@ -78,8 +78,7 @@ char guns[20][22] = {
 // struct de uma area da nuketown
 typedef struct
 {
-	int id;
-	char name[30];
+	char name[21];
 	int connections[6];
 } nuketown_area;
 
@@ -93,26 +92,32 @@ pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_barrier_t barrier;
 
 // cria variavel de controle do jogo
-int is_game_over = 0;
+int game_over = 0;
 
 void humiliate(int killer, int victim)
 {
-	players[victim].is_dead = 1;
-	printf("%s humilhou %s usando FAQUINHA\n", players[killer].name, players[victim].name);
+	printf("\nHUMILHAÇÃO!\n");
+	printf("%s humilhou %s\n", players[killer].name, players[victim].name);
 	if (players[victim].gun > 0)
 	{
+		printf("%s: %s => %s\n", players[victim].name, guns[players[victim].gun], guns[players[victim].gun - 1]);
 		players[victim].gun -= 1;
 	}
+	printf("\n");
 }
 
 void kill(int killer, int victim)
 {
-	players[victim].is_dead = 1;
-	printf("%s matou %s usando %s\n", players[killer].name, players[victim].name, guns[players[killer].gun]);
-	players[killer].gun += 1;
-	if (players[killer].gun == 20)
+	printf("\nMORTE!\n");
+	printf("%s (%s) %s\n", players[killer].name, guns[players[killer].gun], players[victim].name);
+	if (players[killer].gun == 19)
 	{
-		is_game_over = 1;
+		game_over = 1;
+	}
+	else
+	{
+		printf("%s: %s => %s\n\n", players[killer].name, guns[players[killer].gun], guns[players[killer].gun + 1]);
+		players[killer].gun += 1;
 	}
 }
 
@@ -130,7 +135,8 @@ void combat(int player1, int player2)
 		killer = player2;
 		victim = player1;
 	}
-	int gun_kill = rand() % 5;
+	players[victim].is_dead = 1;
+	int gun_kill = rand() % 7;
 	if (gun_kill)
 	{
 		kill(killer, victim);
@@ -199,16 +205,36 @@ void spawn(int id)
 	sleep(1);
 }
 
+void initial_countdown()
+{
+	printf("\n5\n");
+	sleep(1);
+	printf("4\n");
+	sleep(1);
+	printf("3\n");
+	sleep(1);
+	printf("2\n");
+	sleep(1);
+	printf("1\n\n");
+	sleep(1);
+	printf("PRIMEIRO JOGADOR A MATAR COM TODAS AS ARMAS VENCE\n\n");
+	sleep(1);
+}
+
 // funcao dos jogadores
 void *players_function(void *arg)
 {
 	int id = (*(int *)arg);
 	spawn(id);
+	if (id == 0)
+	{
+		initial_countdown();
+	}
 	pthread_barrier_wait(&barrier);
 	while (1)
 	{
 		pthread_mutex_lock(&mutex);
-		if (is_game_over)
+		if (game_over)
 		{
 			pthread_mutex_unlock(&mutex);
 			break;
@@ -217,18 +243,20 @@ void *players_function(void *arg)
 		{
 			spawn(id);
 		}
-		else
+		if (is_someone_here(id))
 		{
-			int to_move = rand() % 2;
-			if (to_move)
-			{
-				move(id);
-			}
-			if (is_someone_here(id))
-			{
-				int enemy = get_enemy_id(id);
-				combat(id, enemy);
-			}
+			int enemy = get_enemy_id(id);
+			combat(id, enemy);
+		}
+		int to_move = rand() % 2;
+		if (to_move)
+		{
+			move(id);
+		}
+		if (is_someone_here(id))
+		{
+			int enemy = get_enemy_id(id);
+			combat(id, enemy);
 		}
 		pthread_mutex_unlock(&mutex);
 	}
@@ -237,7 +265,7 @@ void *players_function(void *arg)
 
 void start_game()
 {
-	// system("clear");
+	system("clear");
 	pthread_t threads[6];
 	pthread_barrier_init(&barrier, NULL, 6);
 	int *id;
@@ -257,7 +285,6 @@ void start_game()
 void create_player(int id, int index)
 {
 	choosen_players[id] = index;
-	players[id].id = id;
 	strcpy(players[id].name, all_players[index]);
 	players[id].gun = 0;
 	players[id].is_dead = 1;
@@ -280,7 +307,7 @@ int was_player_chosen(int index)
 
 void choose_players()
 {
-	// system("clear");
+	system("clear");
 	printf("=> JOGADORES\n\n");
 	int index;
 	for (int i = 0; i < 6; i++)
@@ -349,35 +376,26 @@ void initialize_nuketown_connections()
 
 void initialize_nuketown_names()
 {
-	strcpy(nuketown[0].name, "CASA AMARELA - JARDIM");
-	strcpy(nuketown[1].name, "CASA AMARELA - TERREO");
-	strcpy(nuketown[2].name, "CASA AMARELA - PRIMEIRO ANDAR");
-	strcpy(nuketown[3].name, "CASA AMARELA - GARAGEM");
-	strcpy(nuketown[4].name, "CASA VERDE - JARDIM");
-	strcpy(nuketown[5].name, "CASA VERDE - TERREO");
-	strcpy(nuketown[6].name, "CASA VERDE - PRIMEIRO ANDAR");
-	strcpy(nuketown[7].name, "CASA VERDE - GARAGEM");
+	strcpy(nuketown[0].name, "CASA AMARELA JARDIM ");
+	strcpy(nuketown[1].name, "CASA AMARELA EMBAIXO ");
+	strcpy(nuketown[2].name, "CASA AMARELA EM CIMA ");
+	strcpy(nuketown[3].name, "CASA AMARELA GARAGEM ");
+	strcpy(nuketown[4].name, "CASA VERDE JARDIM ");
+	strcpy(nuketown[5].name, "CASA VERDE EMBAIXO ");
+	strcpy(nuketown[6].name, "CASA VERDE EM CIMA ");
+	strcpy(nuketown[7].name, "CASA VERDE GARAGEM ");
 	strcpy(nuketown[8].name, "RUA");
-}
-
-void initialize_nuketown_ids()
-{
-	for (int i = 0; i < 9; i++)
-	{
-		nuketown[i].id = i;
-	}
 }
 
 void create_nuketown()
 {
-	initialize_nuketown_ids();
 	initialize_nuketown_names();
 	initialize_nuketown_connections();
 }
 
 void welcome_screen()
 {
-	// system("clear");
+	system("clear");
 	printf("PROGRAMACAO CONCORRENTE\n");
 	printf("2021/1\n");
 	printf("PROJETO FINAL\n\n");

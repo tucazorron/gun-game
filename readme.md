@@ -6,8 +6,10 @@ Artur Filgueiras Scheiba Zorron - 180013696
 
 ## Tema
 
-Black Ops: Gun Game v.102
+Black Ops: Gun Game - Nuketown v.102
 
 ## Para executar
 
 `make`
+
+## Relatório
